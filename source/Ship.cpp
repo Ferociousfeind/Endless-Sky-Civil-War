@@ -1010,6 +1010,8 @@ const Command &Ship::Commands() const
 // should be deleted.
 void Ship::Move(vector<Visual> &visuals, list<shared_ptr<Flotsam>> &flotsam)
 {
+	// General-purpose frame counter since takeoff (hopefully)
+	timer ++;
 	// Check if this ship has been in a different system from the player for so
 	// long that it should be "forgotten." Also eliminate ships that have no
 	// system set because they just entered a fighter bay.
@@ -2569,12 +2571,41 @@ double Ship::MaximumHeat() const
 
 // Calculate the multiplier for cooling efficiency.
 double Ship::CoolingEfficiency() const
-{
-	// This is an S-curve where the efficiency is 100% if you have no outfits
-	// that create "cooling inefficiency", and as that value increases the
-	// efficiency stays high for a while, then drops off, then approaches 0.
+{	
+	double maximumHeat = MaximumHeat();
+	double currentHeat = Heat();
+	double currentCooling = attributes.Get("cooling") + attributes.Get("active cooling");
+	float desiredInefficiency = 30
+	
+	if (currentHeat >= maximumHeat)
+	{
+		desiredInefficiency = (maximumHeat - currentHeat)/currentCooling;
+	}
+	// getting a maximum allowed "cooling inefficiency" from a maximum allowed percent
+	double desiredInefficiency = -2 (tan(2.924(desiredInefficiency - 0.5466)) - 4);
+	
+	// Ships have to hold onto heat they've generated.
+	// To simulate this, "cooling inefficiency" slowly increases towards
+	// infinity over a long period of time, with a "half life" of
+	// almost exactly 10 minutes in frames (36000 frames)
+	
 	double x = attributes.Get("cooling inefficiency");
-	return 2. + 2. / (1. + exp(x / -2.)) - 4. / (1. + exp(x / -4.));
+	double x += pow(desiredInefficiency - (desiredInefficiency - x)(1-0.000019253903), timer);
+	
+	// "This is an S-curve where the efficiency is 100% if you have no outfits
+	// that create "cooling inefficiency", and as that value increases the
+	// efficiency stays high for a while, then drops off, then approaches 0."
+	// okay boomer
+	
+	// ok listen up
+	// That's largely still true, but we're using an arc-tangent instead.
+	// at 0 this outputs ~1.000026, and at infinity it outputs ~0.009399
+	// so, extremely close to 1.00 and 0.01 respectively
+	
+	// getting a percent from "cooling inefficiency"
+	return (atan(4 - ((x)/2)) / 2.924 ) +0.5466;
+
+
 }
 
 
